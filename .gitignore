@@ -1,0 +1,12 @@
+os.dasm
+hd60.img
+hd80M.img
+config.log
+bx_enh_dbg.ini
+hd80M.img.backup
+bochslog.txt
+bochsout.txt
+nohup.out
+.history
+build
+.vscode

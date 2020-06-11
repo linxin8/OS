@@ -1,0 +1,5 @@
+禁用：
+    全局对象自动构造//需要运行库以及编译器支持支持，解决办法是手动调用构造函数来构造全局对象
+    异常//需要运行库支持
+    RTTI(Run-time type Information)//需要运行库支持
+    threadsafe statics //需要运行库支持
