@@ -16,22 +16,14 @@
 #define SECTOR_SIZE 512          // 扇区字节大小
 #define BLOCK_SIZE SECTOR_SIZE   // 块字节大小
 
-Partition::Partition()
-{
-    this->partition_lba_base     = 0;
-    this->partition_sector_count = 0;
-    this->my_disk                = nullptr;
-    valid                        = false;
-    formated                     = false;
-}
-
-Partition::Partition(uint32_t start_lba, uint32_t sector_count, struct Disk* my_disk, const char* name)
+void Partition::init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_disk, const char* name)
 {
     this->partition_lba_base     = start_lba;
     this->partition_sector_count = sector_count;
     this->my_disk                = my_disk;
     valid                        = sector_count > 0;
     formated                     = false;
+    inode_list.init();
     ASSERT(strlen(name) < 7);
     strcpy(this->name, name);
     if (sector_count != 0)
@@ -52,7 +44,6 @@ Partition::Partition(uint32_t start_lba, uint32_t sector_count, struct Disk* my_
                 inode_sector_count         = super_block->inode_bitmap_sector;
                 read_sector(super_block->block_bitmap_lba, block_bitmap.start_address,
                             super_block->block_bitmap_sector);
-                LOG_LINE();
                 inode_bitmap.start_address = (uint8_t*)Memory::malloc(super_block->inode_bitmap_sector * SECTOR_SIZE);
                 inode_bitmap.byte_size     = super_block->inode_table_sector * SECTOR_SIZE;
                 read_sector(super_block->inode_bitmap_lba, inode_bitmap.start_address,
@@ -66,24 +57,6 @@ Partition::Partition(uint32_t start_lba, uint32_t sector_count, struct Disk* my_
         }
         Memory::free(super_block);
     }
-}
-
-Partition& Partition::operator=(Partition&& right)
-{
-    this->partition_lba_base     = right.partition_lba_base;
-    this->partition_sector_count = right.partition_sector_count;
-    this->my_disk                = right.my_disk;
-    strcpy(name, right.name);
-    this->block_bitmap       = right.block_bitmap;
-    this->inode_bitmap       = right.inode_bitmap;
-    this->inode_list         = (List &&) right.inode_list;
-    this->formated           = right.formated;
-    this->valid              = right.valid;
-    this->block_sector_count = right.block_sector_count;
-    this->block_start_sector = right.block_start_sector;
-    this->inode_start_sector = right.inode_start_sector;
-    this->inode_sector_count = right.inode_sector_count;
-    return *this;
 }
 
 const char* Partition::get_name()
@@ -242,7 +215,6 @@ void Partition::format()
 
 Inode* Partition::open_inode(uint32_t no)
 {
-    LOG_LINE();
     ASSERT(no < MAX_FILES_PER_PART);
     if (!inode_list.is_empty())
     {
@@ -264,13 +236,16 @@ Inode* Partition::open_inode(uint32_t no)
     ASSERT(node != nullptr);
     read_byte(byte_offset, node, sizeof(Inode));
     node->open_count = 1;
+    printkln(node->list_tag.previous);
+    printkln(node->list_tag.next);
     inode_list.push_front(node->list_tag);
+    printkln(node->list_tag.previous);
+    printkln(node->list_tag.next);
     return node;
 }
 
 void Partition::close_inode(Inode* inode)
 {
-    LOG_LINE();
     ASSERT(inode != nullptr);
     AtomicGuard gurad;
     ASSERT(inode_list.find(inode->list_tag));
@@ -278,6 +253,8 @@ void Partition::close_inode(Inode* inode)
     inode->open_count -= 1;
     if (inode->open_count == 0)
     {
+        printkln(inode->list_tag.previous);
+        printkln(inode->list_tag.next);
         inode_list.remove(inode->list_tag);
         // to do
         Memory::free_kernel(inode);  // malloc_kernel 应该用malloc_free 释放内存

@@ -125,19 +125,24 @@ void FileSystem::debug_test()
     // current_partion->print_super_block_info();
     auto inode = current_partion->open_inode(0);
     printkln("%x %x %x %x %x %x", inode, inode->no, inode->open_count, inode->sector, inode->size, inode->write_deny);
+    LOG_LINE();
     current_partion->close_inode(inode);
     inode = current_partion->open_inode(0);
     printkln("%x %x %x %x %x %x", inode, inode->no, inode->open_count, inode->sector, inode->size, inode->write_deny);
 
+    LOG_LINE();
     auto buffer = Memory::malloc(BLOCK_SIZE);
+    LOG_LINE();
     // current_partion->read_block(0, buffer);
     // memcpy(buffer, "abcdef123456", 10);
     // current_partion->write_block(0, buffer);
     current_partion->read_block(0, buffer);
+    LOG_LINE();
     for (int i = 0; i < 10; i++)
     {
         printk(((uint8_t*)buffer)[i]);
     }
+    LOG_LINE();
     printk('\n');
     while (true) {}
 }

@@ -18,6 +18,7 @@ public:
     List();
     List(List&& list);
     List& operator=(List&& list);
+    void  init();
     void  insert_before(ListElement* position, ListElement* element);
     void  insert_after(ListElement* position, ListElement* element);
     void  push_front(ListElement* element);

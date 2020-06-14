@@ -347,7 +347,7 @@ static void read_partition_info(Disk* hd, uint32_t ext_lba)
                 // sprintf(hd->prim_parts[p_no].name, "%s%d", hd->name, p_no + 1);
                 char name[8];
                 sprintf(name, "%s%d", hd->name, p_no + 1);
-                hd->prim_parts[p_no] = Partition(ext_lba + p->start_lba, p->sec_cnt, hd, name);
+                hd->prim_parts[p_no].init(ext_lba + p->start_lba, p->sec_cnt, hd, name);
                 p_no++;
                 ASSERT(p_no < 4);  // 0,1,2,3
             }
@@ -362,7 +362,7 @@ static void read_partition_info(Disk* hd, uint32_t ext_lba)
                 // 逻辑分区数字是从5开始,主分区是1～4.
                 char name[8];
                 sprintf(name, "%s%d", hd->name, p_no + 1);
-                hd->prim_parts[p_no] = Partition(ext_lba + p->start_lba, p->sec_cnt, hd, name);
+                hd->prim_parts[p_no].init(ext_lba + p->start_lba, p->sec_cnt, hd, name);
                 l_no++;
                 if (l_no >= 8)  // 只支持8个逻辑分区,避免数组越界
                 {

@@ -12,7 +12,7 @@ OBJS := $(BUILD_DIR)/kernel.o $(BUILD_DIR)/print.asmo $(BUILD_DIR)/asm_interface
 		$(BUILD_DIR)/list.o $(BUILD_DIR)/console.o $(BUILD_DIR)/math.o $(BUILD_DIR)/syscall.o \
 		$(BUILD_DIR)/stdio.o $(BUILD_DIR)/log.o  $(BUILD_DIR)/new.o  $(BUILD_DIR)/stdlib.o \
 		$(BUILD_DIR)/keyboard.o $(BUILD_DIR)/io_queue.o $(BUILD_DIR)/ide.o $(BUILD_DIR)/file_system.o \
-		$(BUILD_DIR)/partition.o $(BUILD_DIR)/inode.o $(BUILD_DIR)/directory.o
+		$(BUILD_DIR)/partition.o $(BUILD_DIR)/inode.o $(BUILD_DIR)/directory.o $(BUILD_DIR)/file.o
  
 # CRTI_OBJ:=$(shell $(CC) $(CFLAGS) -print-file-name=crti.o)
 # CRTI_OBJ:=crti.o

@@ -44,6 +44,14 @@ void List::insert_after(ListElement* position, ListElement* element)
     position->next           = element;
 }
 
+void List::init()
+{
+    head.previous = nullptr;
+    head.next     = &tail;
+    tail.previous = &head;
+    tail.next     = nullptr;
+}
+
 void List::push_front(ListElement* element)
 {
     insert_after(&head, element);

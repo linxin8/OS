@@ -5,13 +5,11 @@
 class Partition
 {
 public:
-    Partition();
-    Partition(uint32_t start_lba, uint32_t sector_count, struct Disk* my_disk, const char* name);
-    Partition& operator=(Partition&& right);
-    void       format();
-    bool       is_valid();
-    bool       is_formated();
-    void       print_super_block_info();
+    void init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_disk, const char* name);
+    void format();
+    bool is_valid();
+    bool is_formated();
+    void print_super_block_info();
 
 public:
     struct Inode* open_inode(uint32_t no);
