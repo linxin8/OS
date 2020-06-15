@@ -3,3 +3,6 @@
     异常//需要运行库支持
     RTTI(Run-time type Information)//需要运行库支持
     threadsafe statics //需要运行库支持
+
+慎用：
+    模板//模板会导致代码膨胀，而本内核需要限制在100kb以内

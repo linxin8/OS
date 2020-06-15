@@ -12,15 +12,21 @@ public:
     void print_super_block_info();
 
 public:
-    struct Inode* open_inode(uint32_t no);
-    void          close_inode(struct Inode* inode);
-    const char*   get_name();
-    uint32_t      alloc_block();
-    void          read_block(uint32_t no, void* buffer);
-    void          write_block(uint32_t no, void* buffer);
+    const char* get_name();
+    uint32_t    alloc_block();
+    void        free_block(uint32_t no);
+    uint32_t    alloc_inode();
+    void        free_inode(uint32_t no);
+    void        read_block_sector(uint32_t no, void* buffer);
+    void        write_block_sector(uint32_t no, void* buffer);
+    void        read_block_byte(uint32_t byte_offset, void* buffer, uint32_t count);
+    void        write_block_byte(uint32_t byte_offset, void* buffer, uint32_t count);
+    void        read_inode_sector(uint32_t no, void* buffer);
+    void        write_inode_sector(uint32_t no, void* buffer);
+    void        read_inode_byte(uint32_t byte_offset, void* buffer, uint32_t count);
+    void        write_inode_byte(uint32_t byte_offset, void* buffer, uint32_t count);
 
 private:
-    // public:
     void read_sector(uint32_t lba, void* buffer, uint32_t sector_count);
     void write_sector(uint32_t lba, void* buffer, uint32_t sector_count);
     void read_byte(uint32_t byte_address, void* buffer, uint32_t byte_count);
@@ -37,7 +43,6 @@ private:
     char         name[8];                 // 分区名称
     Bitmap       block_bitmap;            // 块位图
     Bitmap       inode_bitmap;            // i结点位图
-    List         inode_list;              // 本分区打开的i结点队列
     bool         formated;                // 是否格式化
     bool         valid;                   // 是否有效
 };

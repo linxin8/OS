@@ -23,7 +23,6 @@ void Partition::init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_
     this->my_disk                = my_disk;
     valid                        = sector_count > 0;
     formated                     = false;
-    inode_list.init();
     ASSERT(strlen(name) < 7);
     strcpy(this->name, name);
     if (sector_count != 0)
@@ -76,8 +75,8 @@ uint32_t Partition::alloc_block()
     return index;
 }
 
-//读取一个数据块
-void Partition::read_block(uint32_t no, void* buffer)
+//读取一个数据扇区
+void Partition::read_block_sector(uint32_t no, void* buffer)
 {
     ASSERT(no < block_sector_count);
     ASSERT(block_bitmap.test(no));
@@ -85,13 +84,31 @@ void Partition::read_block(uint32_t no, void* buffer)
     read_sector(block, buffer, 1);
 }
 
-//写入一个数据块
-void Partition::write_block(uint32_t no, void* buffer)
+//写入一个数据扇区
+void Partition::write_block_sector(uint32_t no, void* buffer)
 {
     ASSERT(no < block_sector_count);
     ASSERT(block_bitmap.test(no));
     uint32_t block = block_start_sector + no;
     write_sector(block, buffer, 1);
+}
+
+//读取一个inode扇区
+void Partition::read_inode_sector(uint32_t no, void* buffer)
+{
+    ASSERT(no < inode_sector_count);
+    ASSERT(inode_bitmap.test(no));
+    uint32_t inode = inode_start_sector + no;
+    read_sector(inode, buffer, 1);
+}
+
+//写入一个inode扇区
+void Partition::write_inode_sector(uint32_t no, void* buffer)
+{
+    ASSERT(no < inode_sector_count);
+    ASSERT(inode_bitmap.test(no));
+    uint32_t inode = inode_start_sector + no;
+    write_sector(inode, buffer, 1);
 }
 
 void Partition::format()
@@ -213,53 +230,77 @@ void Partition::format()
     Memory::free(buffer);
 }
 
-Inode* Partition::open_inode(uint32_t no)
-{
-    ASSERT(no < MAX_FILES_PER_PART);
-    if (!inode_list.is_empty())
-    {
-        for (auto p = &inode_list.front(); p != inode_list.back().next; p = p->next)
-        {
-            Inode* inode = (Inode*)((uint32_t)p - (uint32_t) & ((Inode*)0)->list_tag);
-            if (inode->no == no)
-            {
-                inode->open_count += 1;
-                return inode;
-            }
-        }
-    }
+// Inode* Partition::open_inode(uint32_t no)
+// {
+//     ASSERT(no < MAX_FILES_PER_PART);
+//     if (!inode_list.is_empty())
+//     {
+//         for (auto p = &inode_list.front(); p != inode_list.back().next; p = p->next)
+//         {
+//             Inode* inode = (Inode*)((uint32_t)p - (uint32_t) & ((Inode*)0)->list_tag);
+//             if (inode->no == no)
+//             {
+//                 inode->open_count += 1;
+//                 return inode;
+//             }
+//         }
+//     }
 
-    uint32_t index = no * sizeof(Inode);
-    ASSERT(index + sizeof(Inode) <= partition_sector_count * SECTOR_SIZE);
-    uint32_t byte_offset = index * sizeof(Inode) + block_start_sector * SECTOR_SIZE;
-    Inode*   node        = (Inode*)Memory::malloc_kernel(sizeof(Inode));
-    ASSERT(node != nullptr);
-    read_byte(byte_offset, node, sizeof(Inode));
-    node->open_count = 1;
-    printkln(node->list_tag.previous);
-    printkln(node->list_tag.next);
-    inode_list.push_front(node->list_tag);
-    printkln(node->list_tag.previous);
-    printkln(node->list_tag.next);
-    return node;
+//     uint32_t index = no * sizeof(Inode);
+//     ASSERT(index + sizeof(Inode) <= partition_sector_count * SECTOR_SIZE);
+//     uint32_t byte_offset = index * sizeof(Inode) + block_start_sector * SECTOR_SIZE;
+//     Inode*   node        = (Inode*)Memory::malloc_kernel(sizeof(Inode));
+//     ASSERT(node != nullptr);
+//     read_byte(byte_offset, node, sizeof(Inode));
+//     node->open_count = 1;
+//     inode_list.push_front(node->list_tag);
+//     return node;
+// }
+
+// void Partition::close_inode(Inode* inode)
+// {
+//     ASSERT(inode != nullptr);
+//     AtomicGuard gurad;
+//     ASSERT(inode_list.find(inode->list_tag));
+//     ASSERT(inode->open_count > 0);
+//     inode->open_count -= 1;
+//     if (inode->open_count == 0)
+//     {
+//         printkln(inode->list_tag.previous);
+//         printkln(inode->list_tag.next);
+//         inode_list.remove(inode->list_tag);
+//         // to do
+//         Memory::free_kernel(inode);  // malloc_kernel 应该用malloc_free 释放内存
+//         //未实现硬盘同步
+//     }
+// }
+
+void Partition::read_inode_byte(uint32_t byte_offset, void* buffer, uint32_t count)
+{
+    uint32_t last_sector = (byte_offset + count) / SECTOR_SIZE + inode_start_sector;
+    ASSERT(last_sector < inode_start_sector + inode_sector_count);
+    read_byte(byte_offset + inode_start_sector * BLOCK_SIZE, buffer, count);
 }
 
-void Partition::close_inode(Inode* inode)
+void Partition::write_inode_byte(uint32_t byte_offset, void* buffer, uint32_t count)
 {
-    ASSERT(inode != nullptr);
-    AtomicGuard gurad;
-    ASSERT(inode_list.find(inode->list_tag));
-    ASSERT(inode->open_count > 0);
-    inode->open_count -= 1;
-    if (inode->open_count == 0)
-    {
-        printkln(inode->list_tag.previous);
-        printkln(inode->list_tag.next);
-        inode_list.remove(inode->list_tag);
-        // to do
-        Memory::free_kernel(inode);  // malloc_kernel 应该用malloc_free 释放内存
-        //未实现硬盘同步
-    }
+    uint32_t last_sector = (byte_offset + count) / SECTOR_SIZE + inode_start_sector;
+    ASSERT(last_sector < inode_start_sector + inode_sector_count);
+    write_byte(byte_offset + inode_start_sector * BLOCK_SIZE, buffer, count);
+}
+
+void Partition::read_block_byte(uint32_t byte_offset, void* buffer, uint32_t count)
+{
+    uint32_t last_sector = (byte_offset + count) / SECTOR_SIZE + block_start_sector;
+    ASSERT(last_sector < block_start_sector + block_sector_count);
+    read_byte(byte_offset + block_start_sector * BLOCK_SIZE, buffer, count);
+}
+
+void Partition::write_block_byte(uint32_t byte_offset, void* buffer, uint32_t count)
+{
+    uint32_t last_sector = (byte_offset + count) / SECTOR_SIZE + block_start_sector;
+    ASSERT(last_sector < block_start_sector + block_sector_count);
+    write_byte(byte_offset + block_start_sector * BLOCK_SIZE, buffer, count);
 }
 
 void Partition::read_byte(uint32_t byte_address, void* buffer, uint32_t byte_count)

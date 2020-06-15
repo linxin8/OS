@@ -6,6 +6,11 @@ class ListElement
 public:
     void         remove_from_list();
     ListElement& operator=(const ListElement&) = delete;
+    void         init()
+    {
+        previous = nullptr;
+        next     = nullptr;
+    }
 
 public:
     ListElement* previous = nullptr;
