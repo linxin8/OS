@@ -18,6 +18,8 @@
 
 void Partition::init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_disk, const char* name)
 {
+    ASSERT(sector_count > 0);
+    ASSERT(start_lba > 0);
     this->partition_lba_base     = start_lba;
     this->partition_sector_count = sector_count;
     this->my_disk                = my_disk;
@@ -63,7 +65,7 @@ const char* Partition::get_name()
     return name;
 }
 
-uint32_t Partition::alloc_block()
+int32_t Partition::alloc_block()
 {
     int32_t index = block_bitmap.scan(1);
     ASSERT(index != -1);
@@ -129,6 +131,7 @@ void Partition::format()
 
     /* 超级块初始化 */
     SuperBlock sb;
+    memset(&sb, 0, sizeof(sb));
     sb.magic              = SUPER_BLOCK_MAGIC;
     sb.sector_count       = partition_sector_count;
     sb.inode_count        = MAX_FILES_PER_PART;
@@ -145,7 +148,7 @@ void Partition::format()
 
     sb.block_start_lba   = sb.inode_table_lba + sb.inode_table_sector;
     sb.root_inode_number = 0;  //根目录的 inode 编号为 0
-    sb.dir_entry_size    = sizeof(Directory);
+    sb.dir_entry_size    = sizeof(DirectoryEntry);
 
     /*******************************
      * 1 将超级块写入本分区的1扇区 *
@@ -196,11 +199,18 @@ void Partition::format()
      ***************************************/
     /* 准备写inode_table中的第0项,即根目录所在的inode */
     memset(buffer, 0, buffer_size);  // 先清空缓冲区buf
-    Inode* i     = (Inode*)buffer;
-    i->size      = sb.dir_entry_size * 2;  // .和..
-    i->no        = 0;                      // 根目录占inode数组中第0个inode
-    i->sector[0] = sb.block_start_lba;     // 由于上面的memset,i_sectors数组的其它元素都初始化为0
-
+    //初始化根目录
+    Inode* i           = (Inode*)buffer;
+    i->size            = sb.dir_entry_size * 2;  // .和..
+    i->no              = 0;                      // 根目录占inode数组中第0个inode
+    i->sector[0]       = 0;                      // 0号数据扇区属于根目录
+    i->reference_count = 0;
+    i->is_write_deny   = false;
+    i->partition       = nullptr;
+    for (int j = 1; j < 13; j++)
+    {  //扇区不存在是为-1
+        i->sector[j] = -1;
+    }
     write_sector(sb.inode_table_lba, buffer, sb.inode_table_sector);
 
     /***************************************
@@ -211,22 +221,21 @@ void Partition::format()
     DirectoryEntry* directory_entry = (DirectoryEntry*)buffer;
 
     /* 初始化当前目录"." */
-    memcpy(directory_entry->file_name, ".", 2);
-    directory_entry->inode_number = 0;
-    directory_entry->file_type    = FileType::directory;
+    memcpy(directory_entry->name, ".", 2);
+    directory_entry->inode_no = 0;
+    directory_entry->type     = DirectoryEntry::directory;
     directory_entry++;
 
     /* 初始化当前目录父目录".." */
-    memcpy(directory_entry->file_name, "..", 3);
-    directory_entry->inode_number = 0;  // 根目录的父目录依然是根目录自己
-    directory_entry->file_type    = FileType::directory;
+    memcpy(directory_entry->name, "..", 3);
+    directory_entry->inode_no = 0;  // 根目录的父目录依然是根目录自己
+    directory_entry->type     = DirectoryEntry::directory;
 
     /* sb.data_start_lba已经分配给了根目录,里面是根目录的目录项 */
     write_sector(sb.block_start_lba, buffer, 1);
 
-    printk("root_dir_lba:0x%x\n", sb.block_start_lba);
+    // printk("root_dir_lba:0x%x\n", sb.block_start_lba);
     printk("%s format done\n", name);
-    printkln("buffer %x", buffer);
     Memory::free(buffer);
 }
 
@@ -375,15 +384,18 @@ bool Partition::is_valid()
 
 void Partition::read_sector(uint32_t lba, void* buffer, uint32_t sector_count)
 {
-    ASSERT(lba < partition_sector_count);
-    ASSERT(lba + sector_count <= partition_lba_base + partition_sector_count);
+    ASSERT(lba + sector_count <= partition_sector_count);
     IDE::read(my_disk, partition_lba_base + lba, buffer, sector_count);
 }
 
 void Partition::write_sector(uint32_t lba, void* buffer, uint32_t sector_count)
 {
-    ASSERT(lba < partition_sector_count);
-    ASSERT(lba + sector_count <= partition_lba_base + partition_sector_count);
+    // PRINT_VAR(lba);
+    // PRINT_VAR(sector_count);
+    // PRINT_VAR(partition_sector_count);
+    // PRINT_VAR(name);
+    ASSERT(lba + sector_count <= partition_sector_count);
+    // printkln("write sector: %x", partition_lba_base + lba);
     IDE::write(my_disk, partition_lba_base + lba, buffer, sector_count);
 }
 

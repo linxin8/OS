@@ -399,10 +399,11 @@ void ide_interrupt_handler(uint8_t irq_no)
 void IDE::init()
 {
     printk("ide_init start\n");
+    memset(channel, 0, sizeof(channel));
     uint8_t hd_cnt = *((uint8_t*)(0x475));  // 获取硬盘的数量
     ASSERT(hd_cnt > 0);
     // list_init(&partition_list);
-    partition_list = List();
+    partition_list.init();
     channel_count = DIV_ROUND_UP(hd_cnt, 2);  // 一个ide通道上有两个硬盘,根据硬盘数量反推有几个ide通道
     uint8_t channel_no = 0, dev_no = 0;
     /* 处理每个通道上的硬盘 */

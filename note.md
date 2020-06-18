@@ -22,8 +22,8 @@ i386不支持invlpg指令
 
 |      | start lab | sector count | block bltmap | inode bitmap | inode table | block table |
 | ---- | --------- | ------------ | ------------ | ------------ | ----------- | ----------- |
-| sdb1 | 0x800     | 0x186A1      | 0x802        | 0x818        | 0x81C       | 0xA7C       |
-| sdb2 | 0x19000   | 0xEDE0       | 0x19002      | 0x19011      | 0x19012     | 0x19272     |
+| sdb1 | 0x800     | 0x186A1      | 0x802        | 0x81B        | 0x81C       | 0xABC       |
+| sdb2 | 0x19000   | 0xEDE0       | 0x19002      | 0x19011      | 0x19012     | 0x192B2     |
   
 | Device       | Boot | Start  | End    | Sectors | Size  | Id  | Type  |
 | ------------ | ---- | ------ | ------ | ------- | ----- | --- | ----- |

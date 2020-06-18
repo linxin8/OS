@@ -30,4 +30,12 @@ namespace Debug
     void enter_line(const char* filename, const char* func, uint32_t line);
 }  // namespace Debug
 
+#define PRINT_VAR(x)                                                                                                   \
+    printk(#x ": ");                                                                                                   \
+    printkln(x);
+
+#define PRINT_VAR_2(a, b) PRINT_VAR(a) PRINT_VAR(b)
+
+#define PRINT_VAR_3(a, b, c) PRINT_VAR(a) PRINT_VAR(b) PRINT_VAR(c)
+
 #define LOG_LINE() Debug::enter_line(__FILE__, __func__, __LINE__);

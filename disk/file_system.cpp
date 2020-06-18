@@ -1,4 +1,5 @@
 #include "disk/file_system.h"
+#include "disk/directory.h"
 #include "disk/file.h"
 #include "disk/inode.h"
 #include "kernel/memory.h"
@@ -13,6 +14,8 @@
 #define BLOCK_SIZE SECTOR_SIZE   // 块字节大小
 
 #define MAX_PATH_LEN 512  // 路径最大长度
+
+#define DEBUG_ALOWAYS_FORMAT true
 
 Partition* sdb1;
 Partition* sdb2;
@@ -94,7 +97,7 @@ void FileSystem::init()
             {
                 if (p.is_valid())
                 {
-                    if (!p.is_formated())
+                    if (!p.is_formated() || DEBUG_ALOWAYS_FORMAT)
                     {
                         p.format();
                     }
@@ -105,7 +108,7 @@ void FileSystem::init()
             {
                 if (p.is_valid())
                 {
-                    if (!p.is_formated())
+                    if (!p.is_formated() || DEBUG_ALOWAYS_FORMAT)
                     {
                         p.format();
                     }
@@ -119,26 +122,67 @@ void FileSystem::init()
     mount_partition("sdb1");
 }
 
+DirectoryEntry* find_entry(Directory& directory, const char* name) {}
+
+Directory FileSystem::open_directory(const char* path)
+{
+    ASSERT(path[0] == '/');                //确保是绝对路径
+    Directory parent(current_partion, 0);  //默认是当前分区
+    char      buffer[20];
+    char      len = 0;
+    for (int i = 1; path[i] != '\0'; i++)
+    {
+        if (path[i] == '\\')
+        {
+            ASSERT(len != 0);
+            auto entry = parent.read_entry(buffer);
+            if (!entry.is_valid())
+            {
+                printk("%s not found\n", buffer);
+                return Directory();
+            }
+            if (!entry.is_directory())
+            {
+                printk("%s is not directory\n", buffer);
+                return Directory();
+            }
+            parent = Directory(parent.get_partition(), entry.get_inode_no());
+        }
+        else
+        {
+            buffer[len++] = path[i];
+        }
+    }
+    return parent;
+}
+
 void FileSystem::debug_test()
 {
-    // current_partion->print_super_block_info();
-    // auto inode = current_partion->open_inode(0);
-    // printkln("%x %x %x %x %x %x", inode, inode->no, inode->open_count, inode->sector, inode->size,
-    // inode->write_deny); LOG_LINE(); current_partion->close_inode(inode); inode = current_partion->open_inode(0);
-    // printkln("%x %x %x %x %x %x", inode, inode->no, inode->open_count, inode->sector, inode->size,
-    // inode->write_deny);
-
-    // auto buffer = Memory::malloc(BLOCK_SIZE);
-    // // current_partion->read_block(0, buffer);
-    // // memcpy(buffer, "abcdef123456", 10);
-    // // current_partion->write_block(0, buffer);
-    // current_partion->read_block(0, buffer);
-    // LOG_LINE();
-    // for (int i = 0; i < 10; i++)
+    auto     root  = new Directory(current_partion, 0);
+    uint32_t count = root->get_entry_count();
+    PRINT_VAR(count)
+    for (uint32_t i = 0; i < root->get_entry_count(); i++)
+    {
+        auto entry = root->read_entry(i);
+        PRINT_VAR(entry.get_name());
+        PRINT_VAR(entry.get_inode_no());
+        PRINT_VAR(entry.get_type());
+    }
+    // char str[] = "my file     ";
+    // for (int i = 0; i < 100; i++)
     // {
-    //     printk(((uint8_t*)buffer)[i]);
+    //     itoa(i, str + 7, 10);
+    //     auto temp = new DirectoryEntry(str, -1, DirectoryEntry::file);
+    //     root->insert_entry(temp);
     // }
-
+    // PRINT_VAR(root->get_entry_count());
+    // for (uint32_t i = 0; i < root->get_entry_count(); i++)
+    // {
+    //     root->read_entry(i, entry);
+    //     PRINT_VAR(entry->get_name());
+    //     PRINT_VAR(entry->get_inode_no());
+    //     PRINT_VAR(entry->get_type());
+    // }
     printk('\n');
     while (true) {}
 }

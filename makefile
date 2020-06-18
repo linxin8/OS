@@ -11,9 +11,9 @@ ASM_OBJ := $(patsubst %.asm, $(BUILD_DIR)/%.asmo, $(ASM_SRC))
 ALL_OBJ := $(ASM_OBJ) $(CPP_OBJ)
 
 $(TARGET):stop $(ALL_OBJ) BOOT_BIN 
-	ld $(ALL_OBJ) -nostdlib  -Ttext 0xc0001500 -m elf_i386 -e main -o $(BUILD_DIR)/os.bin  
+	@ld $(ALL_OBJ) -nostdlib  -Ttext 0xc0001500 -m elf_i386 -e main -o $(BUILD_DIR)/os.bin  
 	dd if=$(BUILD_DIR)/os.bin  of=hd60.img count=200 seek=9 conv=notrunc
-	objdump -D  $(BUILD_DIR)/os.bin >  $(BUILD_DIR)/os.dasm 
+	@objdump -D  $(BUILD_DIR)/os.bin >  $(BUILD_DIR)/os.dasm 
   
 BOOT_BIN: $(BUILD_DIR)/kernel/mbr.asmbin $(BUILD_DIR)/kernel/load.asmbin 
 	dd if=$(BUILD_DIR)/kernel/mbr.asmbin  of=hd60.img count=1  conv=notrunc
@@ -32,12 +32,12 @@ $(BUILD_DIR)/%.asmbin:%.asm
 	nasm $< -o $@ 
 
 run: $(TARGET) 
-	bochs -q >/dev/null 2>&1 &
+	@bochs -q >/dev/null 2>&1 &
 
 stop:
-	$(shell pkill bochs)
-	if [ -f  hd60.img.lock ]; then rm hd60.img.lock; fi
-	if [ -f  hd80M.img.lock ]; then rm hd80M.img.lock; fi
+	@$(shell pkill bochs)
+	@if [ -f  hd60.img.lock ]; then rm hd60.img.lock; fi
+	@if [ -f  hd80M.img.lock ]; then rm hd80M.img.lock; fi
   
 rebuild: clean  $(TARGET) 
 

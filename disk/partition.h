@@ -13,9 +13,9 @@ public:
 
 public:
     const char* get_name();
-    uint32_t    alloc_block();
+    int32_t     alloc_block();
     void        free_block(uint32_t no);
-    uint32_t    alloc_inode();
+    int32_t     alloc_inode();
     void        free_inode(uint32_t no);
     void        read_block_sector(uint32_t no, void* buffer);
     void        write_block_sector(uint32_t no, void* buffer);

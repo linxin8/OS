@@ -1,5 +1,6 @@
 #include "lib/string.h"
 #include "lib/debug.h"
+#include "lib/stdio.h"
 
 #define NULL '\0'
 

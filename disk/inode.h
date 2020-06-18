@@ -4,14 +4,19 @@
 #include "kernel/list.h"
 #include "lib/stdint.h"
 
-/* inode结构 */
+/* inode结构,使用new/delete管理内存 */
 class Inode
 {
+    friend class Partition;
+
 public:
-    Inode(uint32_t no, class Partition* partition);
+    Inode(class Partition* partition, uint32_t no);
     ~Inode();
-    void write(uint32_t byte_index, void* src, uint32_t count);
-    void read(uint32_t byte_index, void* des, uint32_t count);
+    void             write(uint32_t byte_index, const void* src, uint32_t count);
+    void             read(uint32_t byte_index, void* des, uint32_t count);
+    uint32_t         get_size() const;
+    class Partition* get_partition();
+    uint32_t         get_no() const;
 
 private:
     int32_t& get_block_index(uint32_t index);
