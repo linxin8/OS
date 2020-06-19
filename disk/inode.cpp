@@ -6,8 +6,9 @@
 
 #define SECTOR_SIZE 512  // 扇区字节大小
 
-Inode::Inode(Partition* partition, uint32_t no)
+Inode::Inode(Partition* partition, int32_t no)
 {
+    ASSERT(no >= 0);
     partition->read_inode_byte(no * sizeof(Inode), this, sizeof(Inode));
     this->no              = no;
     this->partition       = partition;
@@ -15,14 +16,22 @@ Inode::Inode(Partition* partition, uint32_t no)
     this->list_tag.init();
     this->is_write_deny = false;
     this->extend_sector = nullptr;
-    if (sector[13] != -1)
+    if (sector[0] == 0 && sector[1] == 0)
+    {  //此时inode未被初始化
+        for (int i = 0; i < 13; i++)
+        {
+            sector[i] = -1;
+        }
+        size = 0;
+    }
+    if (sector[12] != -1)
     {
         this->extend_sector = (int32_t*)Memory::malloc(SECTOR_SIZE);
-        partition->read_inode_sector(sector[13], this->extend_sector);
+        partition->read_inode_sector(sector[12], this->extend_sector);
     }
 }
 
-uint32_t Inode::get_no() const
+int32_t Inode::get_no() const
 {
     return no;
 }
@@ -46,19 +55,21 @@ void Inode::write(uint32_t byte_index, const void* src, uint32_t count)
     }
     for (uint32_t i = first_sector; i <= last_sector; i++)
     {  //分配扇区
-        int32_t& index = get_block_index(i);
-        if (index == -1)
+        if (i == 12)
         {
-            index = partition->alloc_block();
-            if (i == 12)
+            if (extend_sector == nullptr)
             {
-                ASSERT(extend_sector == nullptr);
                 extend_sector = (int32_t*)Memory::malloc(SECTOR_SIZE);
-                for (uint32_t i = 0; i < SECTOR_SIZE / sizeof(int8_t); i++)
+                for (uint32_t i = 0; i < SECTOR_SIZE / sizeof(int32_t); i++)
                 {
                     extend_sector[i] = -1;
                 }
             }
+        }
+        int32_t& index = get_block_index(i);
+        if (index == -1)
+        {
+            index = partition->alloc_block();
         }
     }
     uint8_t* p_data = (uint8_t*)src;
@@ -89,6 +100,7 @@ void Inode::write(uint32_t byte_index, const void* src, uint32_t count)
     }
     ASSERT((uint32_t)p_data - (uint32_t)src == count);
     size = max(size, byte_index + count);
+    save();
 }
 void Inode::read(uint32_t byte_index, void* des, uint32_t count)
 {
@@ -162,4 +174,9 @@ uint32_t Inode::get_size() const
 Partition* Inode::get_partition()
 {
     return partition;
+}
+
+void Inode::save()
+{
+    partition->write_inode_byte(no * sizeof(Inode), this, sizeof(Inode));
 }

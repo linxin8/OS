@@ -26,6 +26,7 @@ void Partition::init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_
     valid                        = sector_count > 0;
     formated                     = false;
     ASSERT(strlen(name) < 7);
+    memset(this->name, 0, sizeof(this->name));
     strcpy(this->name, name);
     if (sector_count != 0)
     {
@@ -39,16 +40,19 @@ void Partition::init(uint32_t start_lba, uint32_t sector_count, struct Disk* my_
                 formated                   = true;
                 block_bitmap.start_address = (uint8_t*)Memory::malloc(super_block->block_bitmap_sector * SECTOR_SIZE);
                 block_bitmap.byte_size     = super_block->block_bitmap_sector * SECTOR_SIZE;
-                block_start_sector         = super_block->block_start_lba;
-                block_sector_count         = super_block->sector_count - block_start_sector;
-                inode_start_sector         = super_block->inode_table_lba;
-                inode_sector_count         = super_block->inode_bitmap_sector;
                 read_sector(super_block->block_bitmap_lba, block_bitmap.start_address,
                             super_block->block_bitmap_sector);
                 inode_bitmap.start_address = (uint8_t*)Memory::malloc(super_block->inode_bitmap_sector * SECTOR_SIZE);
-                inode_bitmap.byte_size     = super_block->inode_table_sector * SECTOR_SIZE;
+                inode_bitmap.byte_size     = super_block->inode_bitmap_sector * SECTOR_SIZE;
                 read_sector(super_block->inode_bitmap_lba, inode_bitmap.start_address,
                             super_block->inode_bitmap_sector);
+
+                block_start_sector        = super_block->block_start_lba;
+                block_sector_count        = super_block->sector_count - block_start_sector;
+                inode_start_sector        = super_block->inode_table_lba;
+                inode_sector_count        = super_block->inode_table_sector;
+                inode_bitmap_start_sector = super_block->inode_bitmap_lba;
+                block_bitmap_start_sector = super_block->block_bitmap_lba;
             }
             else
             {
@@ -71,9 +75,30 @@ int32_t Partition::alloc_block()
     ASSERT(index != -1);
     block_bitmap.set(index, true);
 
-    uint32_t byte = block_start_sector * BLOCK_SIZE + index / 8;
-    ASSERT(byte <= block_sector_count * SECTOR_SIZE);
+    uint32_t byte = block_bitmap_start_sector * BLOCK_SIZE + index / 8;
     write_byte(byte, block_bitmap.start_address + index / 8, 1);
+
+    auto block_init = Memory::malloc(BLOCK_SIZE);  //初始化分配的block，清除硬盘原有数据
+    memset(block_init, 0, sizeof(Inode));
+    write_block_byte(index * BLOCK_SIZE, block_init, BLOCK_SIZE);
+    Memory::free(block_init);
+
+    return index;
+}
+
+int32_t Partition::alloc_inode()
+{
+    int32_t index = inode_bitmap.scan(1);
+    ASSERT(index != -1);
+    inode_bitmap.set(index, true);
+    uint32_t byte = inode_bitmap_start_sector * BLOCK_SIZE + index / 8;
+    write_byte(byte, inode_bitmap.start_address + index / 8, 1);
+
+    auto inode_init = Memory::malloc(sizeof(Inode));  //初始化分配的inode，清除硬盘原有数据
+    memset(inode_init, 0, sizeof(Inode));
+    write_inode_byte(index * sizeof(Inode), inode_init, sizeof(Inode));
+    Memory::free(inode_init);
+
     return index;
 }
 
@@ -193,12 +218,11 @@ void Partition::format()
      * 无须再像block_bitmap那样单独处理最后一扇区的剩余部分,
      * inode_bitmap所在的扇区中没有多余的无效位 */
     write_sector(sb.inode_bitmap_lba, buffer, sb.inode_bitmap_sector);
-
     /***************************************
      * 4 将inode数组初始化并写入sb.inode_table_lba *
      ***************************************/
     /* 准备写inode_table中的第0项,即根目录所在的inode */
-    memset(buffer, 0, buffer_size);  // 先清空缓冲区buf
+    memset(buffer, 0, buffer_size);
     //初始化根目录
     Inode* i           = (Inode*)buffer;
     i->size            = sb.dir_entry_size * 2;  // .和..
@@ -236,6 +260,9 @@ void Partition::format()
 
     // printk("root_dir_lba:0x%x\n", sb.block_start_lba);
     printk("%s format done\n", name);
+    char name[8]{};
+    strcpy(name, this->name);
+    init(partition_lba_base, partition_sector_count, my_disk, name);  //重新加载分区
     Memory::free(buffer);
 }
 

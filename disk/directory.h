@@ -22,14 +22,14 @@ public:
 
 public:
     DirectoryEntry();
-    DirectoryEntry(const char* name, uint32_t inode_no, Type type);
+    DirectoryEntry(const char* name, int32_t inode_no, Type type);
     const char* get_name() const;
-    uint32_t    get_inode_no() const;
+    int32_t     get_inode_no() const;
     Type        get_type() const;
 
 private:
-    char     name[MAX_FILE_NAME_LEN];  // 普通文件或目录名称
-    uint32_t inode_no;                 // 普通文件或目录对应的inode编号
+    char    name[MAX_FILE_NAME_LEN];  // 普通文件或目录名称
+    int32_t inode_no;                 // 普通文件或目录对应的inode编号
     /* 文件类型 */
     Type type;  // 文件类型
 public:
@@ -43,30 +43,29 @@ class Directory
 {
 public:
     Directory();
-    Directory(class Partition* partition, uint32_t inode_no);
-    Directory(Directory&& direction);
+    Directory(const Directory& directory);
+    static Directory open_root_directory(class Partition* partition);
     ~Directory();
-    void             close();
-    DirectoryEntry   read_entry(const char* name);
-    bool             sync_entry(Directory* parent_directory, DirectoryEntry* directory_entry, void* io_buffer);
-    bool             delete_entry(uint32_t inode_no, void* io_buf);
-    void             insert_entry(DirectoryEntry* directory_entry);
-    bool             is_empty();
-    uint32_t         get_entry_count() const;
-    DirectoryEntry   read_entry(uint32_t index);
-    void             write_entry(uint32_t index, const DirectoryEntry& directory_entry);
-    class Partition* get_partition() const;
-    bool             is_valid() const;
-    Directory&       operator=(Directory&& directory);
+    void           close();
+    bool           is_empty();
+    uint32_t       get_entry_count() const;
+    bool           is_valid() const;
+    Directory      open_directory(const char* name);
+    void           insert_directory(const char* name);
+    void           insert_file(const char* name);
+    DirectoryEntry read_entry(uint32_t index);
 
 private:
     static const uint32_t index_max;
 
 private:
+    Directory(class Partition* partition, int32_t inode_no);
+    DirectoryEntry find_entry(const char* name);
     Directory(Inode* inode);
+    void             insert_entry(const DirectoryEntry& entry);
+    void             write_entry(uint32_t index, const DirectoryEntry& directory_entry);
+    class Partition* get_partition() const;
 
 private:
     Inode* inode;
-    // uint32_t offset;  // 记录在目录内的偏移
-    // uint8_t  directory_buffer[512];  // 目录的数据缓存
 };

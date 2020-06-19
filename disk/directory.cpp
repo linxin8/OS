@@ -6,14 +6,13 @@
 #include "lib/stdio.h"
 #include "lib/string.h"
 
-Directory* root;
+DirectoryEntry::DirectoryEntry() : name(""), inode_no(-1), type(none) {}
 
-DirectoryEntry::DirectoryEntry() : name(""), inode_no((uint32_t)-1), type(none) {}
-
-DirectoryEntry::DirectoryEntry(const char* name, uint32_t inode_no, Type type)
+DirectoryEntry::DirectoryEntry(const char* name, int32_t inode_no, Type type)
 {
     ASSERT(name != nullptr);
     ASSERT(strlen(name) <= MAX_FILE_NAME_LEN);
+    memset((void*)this->name, 0, sizeof(this->name));
     strcpy(this->name, name);
     this->inode_no = inode_no;
     this->type     = type;
@@ -25,11 +24,11 @@ bool DirectoryEntry::is_valid() const
 }
 bool DirectoryEntry::is_directory() const
 {
-    return type != directory;
+    return type == directory;
 }
 bool DirectoryEntry::is_file() const
 {
-    return type != file;
+    return type == file;
 }
 
 DirectoryEntry::Type DirectoryEntry::get_type() const
@@ -37,7 +36,7 @@ DirectoryEntry::Type DirectoryEntry::get_type() const
     return type;
 }
 
-uint32_t DirectoryEntry::get_inode_no() const
+int32_t DirectoryEntry::get_inode_no() const
 {
     return inode_no;
 }
@@ -47,32 +46,7 @@ const char* DirectoryEntry::get_name() const
     return name;
 }
 
-const uint32_t Directory::index_max = 140 * 512 / sizeof(DirectoryEntry);
-
-Directory::Directory(Inode* inode)
-{
-    ASSERT(inode != nullptr);
-    this->inode = inode;
-}
-
-Directory::Directory(Partition* partition, uint32_t inode_no)
-{
-    inode = new Inode(partition, inode_no);
-}
-
-Directory::Directory(Directory&& directory) : inode(directory.inode)
-{
-    directory.inode = nullptr;
-}
-
-Directory& Directory::operator=(Directory&& directory)
-{
-    this->inode     = directory.inode;
-    directory.inode = nullptr;
-    return *this;
-}
-
-DirectoryEntry Directory::read_entry(const char* name)
+DirectoryEntry Directory::find_entry(const char* name)
 {
     uint32_t count = get_entry_count();
     for (uint32_t i = 0; i < count; i++)
@@ -89,7 +63,65 @@ DirectoryEntry Directory::read_entry(const char* name)
     return DirectoryEntry();
 }
 
+const uint32_t Directory::index_max = 140 * 512 / sizeof(DirectoryEntry);
+
+Directory::Directory(Inode* inode)
+{
+    ASSERT(inode != nullptr);
+    this->inode = inode;
+}
+
+Directory Directory::open_root_directory(Partition* partition)
+{
+    return Directory(partition, 0);
+}
+
+Directory::Directory(Partition* partition, int32_t inode_no)
+{
+    inode = new Inode(partition, inode_no);
+}
+
 Directory::Directory() : inode(nullptr) {}
+
+Directory::Directory(const Directory& directory) : inode(directory.inode) {}
+
+Directory::~Directory()
+{
+    if (inode != nullptr)
+    {
+        // delete inode;
+        inode = nullptr;
+    }
+}
+
+void Directory::insert_directory(const char* name)
+{
+    if (find_entry(name).is_valid())
+    {
+        printk("%s is already exist\n", name);
+    }
+    else
+    {
+        auto no = inode->get_partition()->alloc_inode();
+        insert_entry(DirectoryEntry{name, no, DirectoryEntry::directory});
+        auto directory = open_directory(name);
+        ASSERT(directory.is_valid());
+        directory.insert_entry(DirectoryEntry{".", no, DirectoryEntry::directory});
+        directory.insert_entry(DirectoryEntry{"..", inode->get_no(), DirectoryEntry::directory});
+    }
+}
+
+void Directory::insert_file(const char* name)
+{
+    if (find_entry(name).is_valid())
+    {
+        printk("%s is already exist\n", name);
+    }
+    else
+    {
+        insert_entry(DirectoryEntry{name, inode->get_partition()->alloc_inode(), DirectoryEntry::file});
+    }
+}
 
 bool Directory::is_empty()
 {
@@ -101,15 +133,6 @@ bool Directory::is_valid() const
     return inode != nullptr;
 }
 
-Directory::~Directory()
-{
-    if (inode != nullptr)
-    {
-        delete inode;
-        inode = nullptr;
-    }
-}
-
 Partition* Directory::get_partition() const
 {
     return inode->get_partition();
@@ -117,6 +140,7 @@ Partition* Directory::get_partition() const
 
 uint32_t Directory::get_entry_count() const
 {
+    ASSERT(inode != nullptr);
     ASSERT(inode->get_size() % sizeof(DirectoryEntry) == 0);
     return inode->get_size() / sizeof(DirectoryEntry);
 }
@@ -139,10 +163,20 @@ void Directory::write_entry(uint32_t index, const DirectoryEntry& entry)
     inode->write(byte_offset, &entry, sizeof(DirectoryEntry));
 }
 
-void Directory::insert_entry(DirectoryEntry* entry)
+void Directory::insert_entry(const DirectoryEntry& entry)
 {
-    ASSERT(entry->is_valid());
+    ASSERT(entry.is_valid());
     uint32_t index       = get_entry_count();
     uint32_t byte_offset = sizeof(DirectoryEntry) * index;
-    inode->write(byte_offset, entry, sizeof(DirectoryEntry));
+    inode->write(byte_offset, &entry, sizeof(DirectoryEntry));
+}
+
+Directory Directory::open_directory(const char* name)
+{
+    auto entry = find_entry(name);
+    if (entry.is_valid() && entry.is_directory())
+    {
+        return Directory(inode->get_partition(), entry.get_inode_no());
+    }
+    return Directory();
 }

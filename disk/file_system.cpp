@@ -122,67 +122,52 @@ void FileSystem::init()
     mount_partition("sdb1");
 }
 
-DirectoryEntry* find_entry(Directory& directory, const char* name) {}
-
-Directory FileSystem::open_directory(const char* path)
+void ls(Directory directory, uint32_t level = 0)
 {
-    ASSERT(path[0] == '/');                //确保是绝对路径
-    Directory parent(current_partion, 0);  //默认是当前分区
-    char      buffer[20];
-    char      len = 0;
-    for (int i = 1; path[i] != '\0'; i++)
+    ASSERT(directory.is_valid());
+    // PRINT_VAR(directory.get_entry_count());
+    for (uint32_t i = 0; i < directory.get_entry_count(); i++)
     {
-        if (path[i] == '\\')
+        auto entry = directory.read_entry(i);
+        ASSERT(entry.is_valid());
+        if (entry.is_directory())
         {
-            ASSERT(len != 0);
-            auto entry = parent.read_entry(buffer);
-            if (!entry.is_valid())
+            for (uint32_t i = 0; i < level; i++)
             {
-                printk("%s not found\n", buffer);
-                return Directory();
+                printk("  ");
             }
-            if (!entry.is_directory())
-            {
-                printk("%s is not directory\n", buffer);
-                return Directory();
+            printk("d %s %d\n", entry.get_name(), entry.get_inode_no());
+            if (i >= 2)
+            {  //第0个和第1个目录是. 和 ..
+                ls(directory.open_directory(entry.get_name()), level + 1);
             }
-            parent = Directory(parent.get_partition(), entry.get_inode_no());
         }
-        else
+        else if (entry.is_file())
         {
-            buffer[len++] = path[i];
+            for (uint32_t i = 0; i < level; i++)
+            {
+                printk("  ");
+            }
+            printk("f %s %d\n", entry.get_name(), entry.get_inode_no());
         }
     }
-    return parent;
 }
 
 void FileSystem::debug_test()
 {
-    auto     root  = new Directory(current_partion, 0);
-    uint32_t count = root->get_entry_count();
-    PRINT_VAR(count)
-    for (uint32_t i = 0; i < root->get_entry_count(); i++)
-    {
-        auto entry = root->read_entry(i);
-        PRINT_VAR(entry.get_name());
-        PRINT_VAR(entry.get_inode_no());
-        PRINT_VAR(entry.get_type());
-    }
-    // char str[] = "my file     ";
-    // for (int i = 0; i < 100; i++)
-    // {
-    //     itoa(i, str + 7, 10);
-    //     auto temp = new DirectoryEntry(str, -1, DirectoryEntry::file);
-    //     root->insert_entry(temp);
-    // }
-    // PRINT_VAR(root->get_entry_count());
-    // for (uint32_t i = 0; i < root->get_entry_count(); i++)
-    // {
-    //     root->read_entry(i, entry);
-    //     PRINT_VAR(entry->get_name());
-    //     PRINT_VAR(entry->get_inode_no());
-    //     PRINT_VAR(entry->get_type());
-    // }
-    printk('\n');
+    auto root = Directory::open_root_directory(current_partion);
+    ls(root);
+    // Debug::break_point();
+    printkln("====================");
+    root.insert_directory("233");
+    root.insert_file("root file");
+    auto sub = root.open_directory("233");
+    sub.insert_directory("abc");
+    sub.insert_file("sub file");
+    auto sub2 = sub.open_directory("abc");
+    sub2.insert_file("sub2 file");
+    sub2.insert_file("aaa");
+    ls(root);
+    printkln("\nok");
     while (true) {}
 }

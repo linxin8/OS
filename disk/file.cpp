@@ -8,28 +8,20 @@
 #include "lib/stdlib.h"
 #include "lib/string.h"
 
-File::File(Partition* partition, uint32_t inode_no, uint8_t flag)
+File::File() : inode(nullptr), position(0), flag(0) {}
+
+File::File(Partition* partition, int32_t inode_no, uint8_t flag)
+    : inode(new Inode(partition, inode_no)), position(0), flag(flag)
 {
-    inode    = new Inode(partition, inode_no);
-    position = 0;
 }
 
 File::~File()
 {
-    delete inode;
-    inode = nullptr;
-}
-
-uint32_t& get_block_partition_index(uint32_t no, uint32_t* block, uint32_t* extend_block)
-{
-    ASSERT(block != nullptr);
-    ASSERT(no < 140);
-    if (no < 12)
+    if (inode != nullptr)
     {
-        return block[no];
+        delete inode;
+        inode = nullptr;
     }
-    ASSERT(extend_block != nullptr);
-    return extend_block[no - 12];
 }
 
 void File::write(const void* data, uint32_t count)

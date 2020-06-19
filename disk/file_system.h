@@ -1,5 +1,6 @@
 #pragma once
 #include "disk/directory.h"
+#include "disk/file.h"
 #include "ide.h"
 #include "lib/stdint.h"
 
@@ -44,4 +45,6 @@ namespace FileSystem
     int32_t          open(const char* path, uint8_t flag);
     class Partition* get_current_partition();
     Directory        open_directory(const char* path);
+    Directory        insert_directory(const char* parent_path, const char* directory_name);
+    File             insert_file(const char* parent_path, const char* file_name);
 }  // namespace FileSystem
