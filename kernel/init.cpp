@@ -23,7 +23,7 @@ void init_all()
     TSS::init();
     Systemcall::init();
     Keyboard::init();
-    Interrupt::enable();
+    // Interrupt::enable();
     IDE::init();
     FileSystem::init();
     // Interrupt::disable();
