@@ -10,8 +10,9 @@ class Inode
     friend class Partition;
 
 public:
-    Inode(class Partition* partition, int32_t no);
-    ~Inode();
+    static Inode*    get_instance(class Partition* partition, int32_t no);
+    static Inode*    copy_instance(Inode* inode);
+    static void      remove_instance(Inode* inode);
     void             write(uint32_t byte_index, const void* src, uint32_t count);
     void             read(uint32_t byte_index, void* des, uint32_t count);
     uint32_t         get_size() const;
@@ -19,10 +20,15 @@ public:
     int32_t          get_no() const;
 
 private:
-    int32_t& get_block_index(uint32_t index);
-    void     save();
+    int32_t&     get_block_index(uint32_t index);
+    void         save();
+    static List& get_list();
+    void*        operator new(__SIZE_TYPE__ size);
+    void         operator delete(void* p);
 
 private:
+    Inode(class Partition* partition, int32_t no);
+    ~Inode();
     int32_t no;  // inode编号
     /* 当此inode是文件时,i_size是指文件大小,
     若此inode是目录,i_size是指该目录下所有目录项大小之和*/

@@ -15,7 +15,7 @@ void Semaphore::down()
     {
         ASSERT(!waiters.find(Thread::get_current_pcb()->semaphore_tag));
         waiters.push_back(Thread::get_current_pcb()->semaphore_tag);
-        Thread::block_current_thread();
+        Thread::block_current_thread();  //一直休眠直到up操作发生
     }
     value--;
     ASSERT(value == 0);

@@ -11,7 +11,7 @@
 File::File() : inode(nullptr), position(0), flag(0) {}
 
 File::File(Partition* partition, int32_t inode_no, uint8_t flag)
-    : inode(new Inode(partition, inode_no)), position(0), flag(flag)
+    : inode(Inode::get_instance(partition, inode_no)), position(0), flag(flag)
 {
 }
 
@@ -19,7 +19,7 @@ File::~File()
 {
     if (inode != nullptr)
     {
-        delete inode;
+        Inode::remove_instance(inode);
         inode = nullptr;
     }
 }

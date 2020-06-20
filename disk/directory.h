@@ -54,6 +54,8 @@ public:
     void           insert_directory(const char* name);
     void           insert_file(const char* name);
     DirectoryEntry read_entry(uint32_t index);
+    void           remove_file(const char* name);
+    void           remove_directory(const char* name);
 
 private:
     static const uint32_t index_max;

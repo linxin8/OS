@@ -1,5 +1,6 @@
 #include "disk/inode.h"
 #include "disk/partition.h"
+#include "kernel/interrupt.h"
 #include "kernel/memory.h"
 #include "lib/debug.h"
 #include "lib/math.h"
@@ -28,6 +29,86 @@ Inode::Inode(Partition* partition, int32_t no)
     {
         this->extend_sector = (int32_t*)Memory::malloc(SECTOR_SIZE);
         partition->read_inode_sector(sector[12], this->extend_sector);
+    }
+}
+
+List& Inode::get_list()
+{
+    static List list;
+    return list;
+}
+
+Inode* Inode::copy_instance(Inode* inode)
+{
+    AtomicGuard gurad;
+    ASSERT(inode != nullptr);
+    ASSERT(get_list().find(inode->list_tag));
+    inode->reference_count++;
+    // printkln("copy ref %d %x %d %d", inode->no, inode, inode->reference_count, get_list().get_length());
+    return inode;
+}
+
+//为了共享inode，需要把inode放在内核空间中
+void* Inode::operator new(__SIZE_TYPE__ size)
+{
+    return Memory::malloc_kernel(size);
+}
+
+//与 new 对应，需要在内核空间中释放内存
+void Inode::operator delete(void* p)
+{
+    Memory::free_kernel(p);
+}
+
+Inode* Inode::get_instance(Partition* partition, int32_t no)
+{
+    AtomicGuard gurad;
+    auto&       list = get_list();
+    if (!list.is_empty())
+    {
+        auto begin = &list.front();
+        auto end   = list.back().next;
+        ASSERT(begin != nullptr);
+        ASSERT(end != nullptr);
+        for (auto it = begin; it != end; it = it->next)
+        {
+            Inode* inode = (Inode*)((uint32_t)it - (uint32_t)(&((Inode*)0)->list_tag));
+            if (inode->partition == partition && inode->no == no)
+            {  //内存中已经有了inode
+                inode->reference_count++;
+                // printkln("add  ref %d %x %d %d", inode->no, inode, inode->reference_count, list.get_length());
+                return inode;
+            }
+        }
+    }
+    //内存中不存在inode
+    auto inode = new Inode(partition, no);
+    list.push_front(inode->list_tag);
+    // printkln("add  ref %d %x %d %d", inode->no, inode, inode->reference_count, list.get_length());
+    return inode;
+}
+
+void Inode::remove_instance(Inode* inode)
+{
+    AtomicGuard gurad;
+    inode->reference_count--;
+    if (inode->reference_count == 0)
+    {
+        // printkln("del  ref %d %x %d %d", inode->no, inode, inode->reference_count, get_list().get_length());
+        get_list().remove(inode->list_tag);
+        delete inode;
+    }
+    else
+    {
+        // printkln("sub  ref %d %x %d %d", inode->no, inode, inode->reference_count, get_list().get_length());
+    }
+}
+
+Inode::~Inode()
+{
+    if (extend_sector != nullptr)
+    {
+        Memory::free(extend_sector);
     }
 }
 
@@ -152,18 +233,6 @@ int32_t& Inode::get_block_index(uint32_t index)
         return sector[index];
     }
     return extend_sector[index - 12];
-}
-
-Inode::~Inode()
-{
-    reference_count--;
-    if (reference_count == 0)
-    {
-        if (extend_sector != nullptr)
-        {
-            Memory::free(extend_sector);
-        }
-    }
 }
 
 uint32_t Inode::get_size() const

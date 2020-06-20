@@ -65,31 +65,24 @@ DirectoryEntry Directory::find_entry(const char* name)
 
 const uint32_t Directory::index_max = 140 * 512 / sizeof(DirectoryEntry);
 
-Directory::Directory(Inode* inode)
-{
-    ASSERT(inode != nullptr);
-    this->inode = inode;
-}
+Directory::Directory(Inode* inode) : inode(Inode::copy_instance(inode)) {}
 
 Directory Directory::open_root_directory(Partition* partition)
 {
     return Directory(partition, 0);
 }
 
-Directory::Directory(Partition* partition, int32_t inode_no)
-{
-    inode = new Inode(partition, inode_no);
-}
+Directory::Directory(Partition* partition, int32_t inode_no) : inode(Inode::get_instance(partition, inode_no)) {}
 
 Directory::Directory() : inode(nullptr) {}
 
-Directory::Directory(const Directory& directory) : inode(directory.inode) {}
+Directory::Directory(const Directory& directory) : inode(Inode::copy_instance(directory.inode)) {}
 
 Directory::~Directory()
 {
     if (inode != nullptr)
     {
-        // delete inode;
+        Inode::remove_instance(inode);
         inode = nullptr;
     }
 }

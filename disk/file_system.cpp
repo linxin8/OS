@@ -15,7 +15,7 @@
 
 #define MAX_PATH_LEN 512  // 路径最大长度
 
-#define DEBUG_ALOWAYS_FORMAT true
+#define DEBUG_ALOWAYS_FORMAT false
 
 Partition* sdb1;
 Partition* sdb2;
@@ -157,17 +157,26 @@ void FileSystem::debug_test()
 {
     auto root = Directory::open_root_directory(current_partion);
     ls(root);
+    // PRINT_VAR(root.get_entry_count());
     // Debug::break_point();
-    printkln("====================");
-    root.insert_directory("233");
-    root.insert_file("root file");
-    auto sub = root.open_directory("233");
-    sub.insert_directory("abc");
-    sub.insert_file("sub file");
-    auto sub2 = sub.open_directory("abc");
-    sub2.insert_file("sub2 file");
-    sub2.insert_file("aaa");
-    ls(root);
+    // Debug::break_point();
+    // ls(root);
+    // printkln("====================");
+    // root.insert_directory("233");
+    // root.insert_file("root file");
+    // auto sub = root.open_directory("233");
+    // sub.insert_directory("abc");
+    // sub.insert_file("sub file");
+    // auto sub2 = sub.open_directory("abc");
+    // sub2.insert_file("sub2 file");
+    // sub2.insert_file("aaa");
+    // ls(root);
+    // root.insert_file("file1");
+    // root.insert_directory("dir1");
+    // auto dir = root.open_directory("dir1");
+    // dir.insert_directory("dir2");
+    // auto dir2 = dir.open_directory("dir2");
+    // dir2.insert_file("file2");
     printkln("\nok");
     while (true) {}
 }
