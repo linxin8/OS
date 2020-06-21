@@ -45,15 +45,6 @@ struct MemoryPool
     VirtualAddressPool  virtual_address_pool;
 };
 
-struct Arena
-{
-    MemoryBlockDescript* descript;  // 此arena关联的MemoryBlockDescript
-    /* isPage为ture时,count表示的是页框数。
-     * 否则count表示空闲memory block数量 */
-    bool     isPage;
-    uint32_t count;
-};
-
 //内核内存池
 MemoryPool kernel_memory_pool;
 //用户内存池
@@ -67,7 +58,7 @@ struct Area
     MemoryBlockDescript* descript;
     /* isPage为ture时,count表示的是页框数。
      * 否则count表示空闲memory block数量 */
-    bool isPage;
+    bool is_page;
     //空闲的block或page数目
     uint32_t count;
 };
@@ -236,6 +227,8 @@ void* get_pde_pointer(void* virtual_address)
 
 void map_page(void* physical_page_address, void* virtual_page_address)
 {
+    // LOG_LINE();
+    // printkln("%x %x", physical_page_address, virtual_page_address);
     uint32_t* pde = (uint32_t*)get_pde_pointer(virtual_page_address);
     uint32_t* pte = (uint32_t*)get_pte_pointer(virtual_page_address);
     if (is_pde_exist(pde))
@@ -311,8 +304,10 @@ void* Memory::malloc_kernel(uint32_t size)
     PCB*        pcb    = Thread::get_current_pcb();
     auto        backup = pcb->pgd;  //暂时让系统认为pcb是内核线程，达到分配内核内存的目的
     pcb->pgd           = nullptr;
-    void* p            = malloc(size);
-    pcb->pgd           = backup;
+    Process::activate(Thread::get_current_pcb());
+    void* p  = malloc(size);
+    pcb->pgd = backup;
+    Process::activate(Thread::get_current_pcb());
     return p;
 }
 
@@ -323,8 +318,10 @@ void Memory::free_kernel(void* p)
     PCB*        pcb    = Thread::get_current_pcb();
     auto        backup = pcb->pgd;  //暂时让系统认为pcb是内核线程，达到释放内核内存的目的
     pcb->pgd           = nullptr;
+    Process::activate(Thread::get_current_pcb());
     free(p);
     pcb->pgd = backup;
+    Process::activate(Thread::get_current_pcb());
 }
 
 void* Memory::malloc(uint32_t size)
@@ -333,13 +330,13 @@ void* Memory::malloc(uint32_t size)
     bool        is_kernel = Thread::is_current_kernel_thread();
     if (size > 1024)
     {
-        uint32_t count = div_round_up(size + sizeof(Arena), PAGE_SIZE);  //除了分配用户内存，还需要分配area内存
+        uint32_t count = div_round_up(size + sizeof(Area), PAGE_SIZE);  //除了分配用户内存，还需要分配area内存
         Area* area = (Area*)(is_kernel ? malloc_kernel_page(count) : malloc_user_page(count));
         if (area == nullptr)
         {
             return nullptr;
         }
-        area->isPage   = true;
+        area->is_page  = true;
         area->count    = count;
         area->descript = nullptr;
         void* block    = (void*)((uint32_t)area + sizeof(Area));
@@ -358,7 +355,7 @@ void* Memory::malloc(uint32_t size)
             {
                 return nullptr;
             }
-            area->isPage   = false;
+            area->is_page  = false;
             area->descript = descript;
             area->count    = (PAGE_SIZE - sizeof(Area)) / area->descript->block_size;
             for (uint32_t i = 0; i < area->count; i++)
@@ -458,7 +455,7 @@ void Memory::free(void* vaddr)
     MemoryBlock* block     = (MemoryBlock*)vaddr;
     Area*        area      = (Area*)((uint32_t)block & 0xfffff000);
 
-    if (area->isPage)
+    if (area->is_page)
     {
         if (is_kernel)
         {
@@ -508,14 +505,14 @@ void Memory::malloc_physical_page_for_virtual_page(bool is_kernel, void* virtual
     {
         ASSERT(vaddr >= (uint32_t)kernel_memory_pool.virtual_address_pool.start_address);
         uint32_t index = (vaddr - (uint32_t)kernel_memory_pool.virtual_address_pool.start_address) / PAGE_SIZE;
-        ASSERT(!kernel_memory_pool.virtual_address_pool.bitmap.test(index));
+        // ASSERT(!kernel_memory_pool.virtual_address_pool.bitmap.test(index));//允许vaddr原本就存在
         kernel_memory_pool.virtual_address_pool.bitmap.set(index, true);
     }
     else
     {
         ASSERT(vaddr >= (uint32_t)pcb->user_virutal_address_pool.start_address);
         uint32_t index = (vaddr - (uint32_t)pcb->user_virutal_address_pool.start_address) / PAGE_SIZE;
-        ASSERT(!pcb->user_virutal_address_pool.bitmap.test(index));
+        // ASSERT(!pcb->user_virutal_address_pool.bitmap.test(index));//允许vaddr原本就存在
         pcb->user_virutal_address_pool.bitmap.set(index, true);
     }
     void* physical_page = is_kernel ? malloc_one_kernel_physical_page() : malloc_one_user_physical_page();

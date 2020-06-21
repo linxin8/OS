@@ -26,7 +26,7 @@ namespace Memory
     void* get_phsical_address_by_virtual_address(void* vaddr);
     void* malloc_kernel_page(uint32_t count);
     void* malloc_user_page(uint32_t count);
-    //为虚页分配实页
+    //为虚页分配实页,并重新加载当前进程的页表
     void  malloc_physical_page_for_virtual_page(bool is_kernel, void* virtual_page);
     void* malloc(uint32_t size);
     void  free(void* vaddr);
