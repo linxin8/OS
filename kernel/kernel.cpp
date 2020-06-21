@@ -21,21 +21,20 @@ void _init();
 
 int i = 0;
 
-void memory_debug(uint32_t interval = 1000)
-{
-    UNUSED(interval);
-    auto pid = getpid();
-}
-
 int main()
 {
     init_all();
-    // Process::execute((void*)user_main, "u1");
+    printf("main pid %d\n", getpid());
+    // printf("main pid %x\n", &Thread::get_current_pcb()->pid);
+    // printf("main pid %d\n", Thread::get_current_pcb()->pid);
+    // printf("main pid %d\n", getpid());
+    Process::execute((void*)user_main, "u1");
     // Process::execute((void*)user_main, "u2");
-    FileSystem::debug_test();
-    while (true) {}
-    Thread::create_thread("u1", 32, user_main, nullptr);
-    Thread::create_thread("u2", 32, user_main, nullptr);
+    // FileSystem::debug_test();
+    // while (true) {}
+    // Thread::create_thread("u1", 32, user_main, nullptr);
+    Interrupt::enable();
+    // Thread::create_thread("u2", 32, user_main, nullptr);
     while (true)
     {
         Thread::yield();
@@ -51,10 +50,19 @@ void debug_interrupt_handle(uint32_t no)
 void user_main(void* arg)
 {
     UNUSED(arg);
-    printf("user_main %d\n", getpid());
+    printf("\nuser process pid %d\n\n", getpid());
+    int32_t test = 0;
     while (true)
     {
-        memory_debug();
-        printf("%c", Keyboard::read_key(true));
+        auto pid = fork();
+        if (pid == 0)
+        {
+            test--;
+            printf("i am child %d, test addr: %x, value %d\n\n", getpid(), &test, test);
+            while (true) {}
+        }
+        test++;
+        printf("i am parent %d, child %d, test addr: %x, value %d\n\n", getpid(), pid, &test, test);
+        while (true) {}
     }
 }
