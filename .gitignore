@@ -11,3 +11,4 @@ nohup.out
 build
 .vscode
 snapshot.txt
+*.lock
