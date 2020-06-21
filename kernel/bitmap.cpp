@@ -2,6 +2,7 @@
 #include "lib/debug.h"
 bool Bitmap::test(uint32_t bit_index)
 {
+    ASSERT(bit_index < byte_size * 8);
     uint32_t byte_index = bit_index / 8;  // 向下取整用于索引数组下标
     uint32_t bit_offset = bit_index % 8;  // 取余用于索引数组内的位
     return start_address[byte_index] & (1 << bit_offset);
