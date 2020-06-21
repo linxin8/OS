@@ -7,6 +7,7 @@
 #include "lib/stdint.h"
 #include "lib/stdio.h"
 #include "lib/string.h"
+#include "process/process.h"
 
 typedef void* Syscall_t;
 
@@ -113,6 +114,11 @@ void Systemcall::sleep(uint32_t m_interval)
     _syscall1(SystemcallType::sleep, m_interval);
 }
 
+pid_t Systemcall::fork()
+{
+    return _syscall0(SystemcallType::fork);
+}
+
 void Systemcall::init()
 {
     printkln("systcall_init start");
@@ -122,6 +128,7 @@ void Systemcall::init()
     syscall_table[(uint32_t)SystemcallType::free]   = (Syscall_t)&Memory::free;
     syscall_table[(uint32_t)SystemcallType::yield]  = (Syscall_t)&Thread::yield;
     syscall_table[(uint32_t)SystemcallType::sleep]  = (Syscall_t)&Timer::sleep;
+    syscall_table[(uint32_t)SystemcallType::fork]   = (Syscall_t)&Process::fork;
 
     printkln("systcall_init done");
 }

@@ -9,7 +9,7 @@ void free(void* p)
 {
     return Systemcall::free(p);
 }
-uint32_t getpid()
+int16_t getpid()
 {
     return Systemcall::getpid();
 }
@@ -22,4 +22,9 @@ void yeild()
 void sleep(uint32_t m_interval)
 {
     Systemcall::sleep(m_interval);
+}
+
+int16_t fork()
+{
+    return Systemcall::fork();
 }

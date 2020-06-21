@@ -74,6 +74,7 @@ namespace Thread
     PCB* get_pcb_by_semaphore_tag(ListElement* semaphore_tag);
     PCB* get_pcb_by_thread_list_tag(ListElement* thread_list_tag);
     bool is_current_pcb_valid();
+    bool is_current_user_thread();
     bool is_kernel_thread(PCB* pcb);
     bool is_user_thread(PCB* pcb);
     bool is_pcb_valid(PCB* pcb);
@@ -85,5 +86,7 @@ namespace Thread
     void yield();
     PCB* create_thread(const char* name, int priority, ThreadCallbackFunction_t function, void* function_arg);
     //向file table中插入已打开的文件标识符
-    void add_global_file_index(int32_t file_table_index);
+    void  add_global_file_index(int32_t file_table_index);
+    pid_t alloc_pid();
+    void  insert_ready_thread(PCB* pcb);
 };  // namespace Thread

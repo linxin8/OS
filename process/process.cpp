@@ -18,6 +18,9 @@
 #define PG_US_S 0  // U/S 属性位值, 系统级
 #define PG_US_U 4  // U/S 属性位值, 用户级
 
+extern "C" {
+void intr_exit();
+};
 /* 构建用户进程初始上下文信息 */
 void process_entry(void* filename)
 {
@@ -127,4 +130,63 @@ void Process::execute(void* filename, const char* process_name)
     pcb->pgd        = create_page_dir();
     create_user_vaddr_bitmap(pcb);
     Memory::init_block_descript(pcb->user_block_descript);
+}
+
+pid_t Process::fork()
+{
+    AtomicGuard guard;
+    ASSERT(Thread::is_current_user_thread());
+    auto parent = Thread::get_current_pcb();
+    auto child  = (PCB*)Memory::malloc_kernel_page(1);
+    ASSERT(((uint32_t)child & 0XFFF) == 0);
+    // auto child = (PCB*)Memory::malloc_kernel(PAGE_SIZE);
+    ASSERT(child != nullptr);
+    // auto buffer = Memory::malloc_kernel_page(1);
+    auto buffer = (PCB*)Memory::malloc_kernel(PAGE_SIZE);
+    ASSERT(buffer != nullptr);
+
+    //处理pcb
+    memcpy(child, parent, PAGE_SIZE);
+    child->pid        = Thread::alloc_pid();
+    child->status     = TaskStatus::ready;
+    child->parent_pid = parent->pid;
+    child->semaphore_tag.init();
+    child->thread_list_tag.init();
+    Memory::init_block_descript(child->user_block_descript);
+    create_user_vaddr_bitmap(child);
+    ASSERT(child->user_virutal_address_pool.start_address != nullptr);
+    memcpy(child->user_virutal_address_pool.bitmap.start_address,
+           parent->user_virutal_address_pool.bitmap.start_address, child->user_virutal_address_pool.bitmap.byte_size);
+
+    //处理页表
+    child->pgd = create_page_dir();
+    ASSERT(child->pgd != nullptr);
+    for (uint32_t i = 0; i < child->user_virutal_address_pool.bitmap.byte_size * 8; i++)
+    {
+        if (parent->user_virutal_address_pool.bitmap.test(i))
+        {  //此虚页存在，把父进程的页拷贝过来
+            uint32_t vaddr = i * PAGE_SIZE + (uint32_t)parent->user_virutal_address_pool.start_address;
+            memcpy(buffer, (void*)vaddr, PAGE_SIZE);
+            activate_page_directory(child);  //使用子进程的页表
+            Memory::malloc_physical_page_for_virtual_page(
+                false, (void*)vaddr);  //由于vaddr在内核，所以子进程也能用相同的虚地址访问
+            activate_page_directory(child);  //分配后，会自动重新加载parent的页表，所以需要再次请求使用子进程的页表
+            memcpy((void*)vaddr, buffer, PAGE_SIZE);
+            activate_page_directory(parent);  //使用父进程的页表
+        }
+    }
+
+    //处理返回值
+    InterruptStack* stack = (InterruptStack*)((uint32_t)child + PAGE_SIZE - sizeof(InterruptStack));
+    stack->eax            = 0;  // eax是返回值，子进程返回0
+
+    *((uint32_t*)stack - 1) = (uint32_t)intr_exit;
+    child->self_kstack      = (uint32_t*)stack - 5;  //中断返回时的栈顶
+
+    // to do
+    // update_inode_open_cnts
+    // Debug::break_point();
+    Memory::free_kernel(buffer);
+    Thread::insert_ready_thread(child);
+    return child->pid;
 }

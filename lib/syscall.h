@@ -10,7 +10,7 @@ namespace Systemcall
     uint32_t          write(const char* str);
     void*             malloc(uint32_t size);
     void              free(void* p);
-    int16_t           fork(void);
+    pid_t             fork();
     int32_t           read(int32_t fd, void* buf, uint32_t count);
     void              putchar(char char_asci);
     void              clear(void);

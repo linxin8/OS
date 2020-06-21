@@ -32,9 +32,9 @@ PCB* Thread::get_current_pcb()
     return (PCB*)(esp & 0xfffff000);  // pcb在页的起始位置
 }
 
-pid_t get_next_pid()
+pid_t Thread::alloc_pid()
 {
-    CriticalSectionGuard();
+    AtomicGuard  guard;
     static pid_t pid = 0;
     return ++pid;
 }
@@ -43,6 +43,12 @@ pid_t get_next_pid()
 bool Thread::is_current_kernel_thread()
 {
     return get_current_pcb()->pgd == nullptr;
+}
+
+//判断当前线程/进程是否为用户线程
+bool Thread::is_current_user_thread()
+{
+    return get_current_pcb()->pgd != nullptr;
 }
 
 //检测当前的pcb是否合法
@@ -145,7 +151,7 @@ void Thread::init_pcb(PCB* pcb, const char* name, int priority)
         pcb->status = TaskStatus::ready;
     }
 
-    pcb->pid           = get_next_pid();
+    pcb->pid           = alloc_pid();
     pcb->priority      = priority;
     pcb->ticks         = priority;
     pcb->elapsed_ticks = 0;
@@ -251,4 +257,11 @@ void Thread::init()
     thread_pool.running_list.push_back(main_thread->thread_list_tag);
     idle_thread = create_thread("idle", 32, &idle, nullptr);
     printkln("thread init done");
+}
+
+void Thread::insert_ready_thread(PCB* pcb)
+{
+    AtomicGuard gurad;
+    ASSERT(!thread_pool.ready_list.find(pcb->thread_list_tag));
+    thread_pool.ready_list.push_front(pcb->thread_list_tag);
 }
