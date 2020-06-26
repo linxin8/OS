@@ -5,13 +5,12 @@
 
 namespace Systemcall
 {
-    pid_t getpid();
-    // size_t            write(int32_t fd, const void* buf, uint32_t count);
-    uint32_t          write(const char* str);
+    pid_t             getpid();
+    int32_t           write(int32_t fd, const void* buffer, uint32_t count);
     void*             malloc(uint32_t size);
     void              free(void* p);
     pid_t             fork();
-    int32_t           read(int32_t fd, void* buf, uint32_t count);
+    int32_t           read(int32_t fd, void* buffer, uint32_t count);
     void              putchar(char char_asci);
     void              clear(void);
     char*             getcwd(char* buf, uint32_t size);
@@ -31,7 +30,7 @@ namespace Systemcall
     int32_t execv(const char* pathname, char** argv);
     void    exit(int32_t status);
     pid_t   wait(int32_t* status);
-    int32_t pipe(int32_t pipefd[2]);
+    int32_t pipe(int32_t fd[2]);
     void    fd_redirect(uint32_t old_local_fd, uint32_t new_local_fd);
     void    help(void);
     void    init();

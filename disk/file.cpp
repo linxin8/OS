@@ -38,3 +38,8 @@ uint32_t File::get_size()
 {
     return inode->get_size();
 }
+
+uint32_t File::get_position()
+{
+    return position;
+}

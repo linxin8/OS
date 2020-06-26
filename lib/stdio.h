@@ -2,6 +2,13 @@
 
 #include "lib/stdint.h"
 
+#ifndef STD_IO
+#    define STD_IO
+#    define STDIN 1
+#    define STDOUT 2
+#    define STDERR 3
+#endif
+
 uint32_t printf(const char* str, ...);
 uint32_t vsprintf(char* str, const char* format, void* ap);
 uint32_t sprintf(char* buf, const char* format, ...);

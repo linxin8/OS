@@ -5,6 +5,7 @@
 
 using ThreadCallbackFunction_t = void (*)(void*);
 typedef int16_t pid_t;
+#define MAX_FILES_OPEN_PER_THREAD 8
 
 enum class TaskStatus : uint32_t
 {
@@ -60,11 +61,11 @@ struct PCB
     uint32_t*           pgd;                        // 进程页表的虚拟地址,在内核线程中为nullptr
     VirtualAddressPool  user_virutal_address_pool;  // 用户进程的虚拟地址
     MemoryBlockDescript user_block_descript[7];     // 用户进程内存块描述符
-    int32_t             file_table[8];              // 已打开文件数组
-    uint32_t            work_directory_inode;       // 进程所在的工作目录的inode编号
-    pid_t               parent_pid;                 // 父进程pid
-    int8_t              exit_status;                // 进程结束时自己调用exit传入的参数
-    uint32_t            stack_magic;                // 用这串数字做栈的边界标记,用于检测栈的溢出
+    int32_t             file_table[MAX_FILES_OPEN_PER_THREAD];  // 已打开文件数组
+    uint32_t            work_directory_inode;                   // 进程所在的工作目录的inode编号
+    pid_t               parent_pid;                             // 父进程pid
+    int8_t              exit_status;                            // 进程结束时自己调用exit传入的参数
+    uint32_t            stack_magic;  // 用这串数字做栈的边界标记,用于检测栈的溢出
 };
 
 namespace Thread
@@ -86,7 +87,6 @@ namespace Thread
     void yield();
     PCB* create_thread(const char* name, int priority, ThreadCallbackFunction_t function, void* function_arg);
     //向file table中插入已打开的文件标识符
-    void  add_global_file_index(int32_t file_table_index);
     pid_t alloc_pid();
     void  insert_ready_thread(PCB* pcb);
 };  // namespace Thread

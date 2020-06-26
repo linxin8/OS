@@ -160,9 +160,9 @@ void Thread::init_pcb(PCB* pcb, const char* name, int priority)
     pcb->stack_magic   = PCB_STACK_MAGIC;
 
     /* 标准输入输出先空出来 */
-    pcb->file_table[0] = 0;
-    pcb->file_table[1] = 1;
-    pcb->file_table[2] = 2;
+    pcb->file_table[0] = 0;  // stdin
+    pcb->file_table[1] = 1;  // stdout
+    pcb->file_table[2] = 2;  // stderr
     /* 其余的全置为-1 */
     for (int i = 3; i < 8; i++)
     {
@@ -210,20 +210,6 @@ PCB* Thread::create_thread(const char* name, int priority, ThreadCallbackFunctio
     LockGuard gurad(thread_pool.lock);
     thread_pool.ready_list.push_back(pcb->thread_list_tag);
     return pcb;
-}
-
-void Thread::add_global_file_index(int32_t file_table_index)
-{
-    PCB* pcb = Thread::get_current_pcb();
-    for (int i = 3; i < 8; i++)  //跳过stdin stdout stderr
-    {
-        if (pcb->file_table[i] == -1)
-        {
-            pcb->file_table[i] = file_table_index;
-            return;
-        }
-    }
-    ASSERT(false);  //添加失败
 }
 
 void Thread::yield()

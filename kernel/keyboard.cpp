@@ -260,7 +260,7 @@ void Keyboard::init()
     printkln("keyboard init done");
 }
 
-int8_t Keyboard::read_key(bool block)
+char Keyboard::read_key(bool block)
 {
     AtomicGuard guard;
     while (keyboard_buffer.is_empty())
@@ -274,5 +274,5 @@ int8_t Keyboard::read_key(bool block)
             return -1;
         }
     }
-    return (int8_t)keyboard_buffer.pop_front();
+    return (char)keyboard_buffer.pop_front();
 }

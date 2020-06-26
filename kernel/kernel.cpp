@@ -54,15 +54,29 @@ void user_main(void* arg)
     int32_t test = 0;
     while (true)
     {
+        char    buffer[2];
+        int32_t fd[2];
+        if (pipe(fd) == -1)
+        {
+            printf("pip failed");
+            while (true) {}
+        }
         auto pid = fork();
         if (pid == 0)
         {
             test--;
             printf("i am child %d, test addr: %x, value %d\n\n", getpid(), &test, test);
+            write(fd[1], "123456", 6);
+            printf("write ok\n");
             while (true) {}
         }
         test++;
         printf("i am parent %d, child %d, test addr: %x, value %d\n\n", getpid(), pid, &test, test);
+        while (true)
+        {
+            read(fd[0], buffer, 1);
+            printf("%c", buffer[0]);
+        }
         while (true) {}
     }
 }

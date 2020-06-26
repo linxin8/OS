@@ -21,12 +21,12 @@ enum class FileWhence : uint32_t
     end
 };
 
-/* 用来记录查找文件过程中已找到的上级路径,也就是查找文件过程中"走过的地方" */
-struct PathSearchRecord
+/* 标准输入输出描述符 */
+enum class STDFD : uint32_t
 {
-    char             searched_path[512];  // 查找过程中的父路径
-    class Directory* parent_directory;    // 文件或目录所在的直接父目录
-    // FileType         file_type;  // 找到的是普通文件还是目录,找不到将为未知类型(FT_UNKNOWN)
+    stdin,   // 0 标准输入
+    stdout,  // 1 标准输出
+    stderr   // 2 标准错误
 };
 
 /* 文件属性结构体 */
@@ -47,4 +47,7 @@ namespace FileSystem
     Directory        open_directory(const char* path);
     Directory        insert_directory(const char* parent_path, const char* directory_name);
     File             insert_file(const char* parent_path, const char* file_name);
+    int32_t          read(int32_t file_id, void* buffer, uint32_t count);
+    int32_t          write(int32_t file_id, const void* buffer, uint32_t count);
+    int32_t          pipe(int32_t fd[2]);
 }  // namespace FileSystem

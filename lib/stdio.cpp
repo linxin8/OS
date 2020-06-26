@@ -69,8 +69,7 @@ uint32_t printf(const char* format, ...)
     char     buff[1024];  // 用于存储拼接后的字符串
     uint32_t len = vsprintf(buff, format, &format);
     ASSERT(len < 1024 - 1);
-    // return write(1, buf, strlen(buf));
-    return Systemcall::write(buff);
+    return Systemcall::write(STDOUT, buff, len);
 }
 
 /* 格式化输出字符串format */

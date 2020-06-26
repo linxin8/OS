@@ -28,3 +28,18 @@ int16_t fork()
 {
     return Systemcall::fork();
 }
+
+int32_t pipe(int32_t fd[2])
+{
+    return Systemcall::pipe(fd);
+}
+
+int32_t read(int32_t fd, void* buffer, uint32_t count)
+{
+    return Systemcall::read(fd, buffer, count);
+}
+
+int32_t write(int32_t fd, const void* buffer, uint32_t count)
+{
+    return Systemcall::write(fd, buffer, count);
+}
