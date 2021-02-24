@@ -2,6 +2,74 @@
 
 一个简单的操作系统内核，实现了简单的功能，如启动，线程/进程管理，内存管理，文件管理，输入输出，用户进程，系统调用等，总代码7k行左右。
 
+
+## Demo
+```c++
+#include "disk/file_system.h"
+#include "kernel/asm_interface.h"
+#include "kernel/init.h"
+#include "kernel/interrupt.h"
+#include "kernel/keyboard.h"
+#include "kernel/memory.h"
+#include "kernel/timer.h"
+#include "lib/debug.h"
+#include "lib/macro.h"
+#include "lib/new.h"
+#include "lib/stdint.h"
+#include "lib/stdio.h"
+#include "lib/stdlib.h"
+#include "process/process.h"
+#include "thread/sync.h"
+#include "thread/thread.h"
+
+int main()
+{
+    init_all();
+    printf("main pid %d\n", getpid());
+    Process::execute((void*)user_main, "u1");
+    Interrupt::enable();
+    while (true)
+    {
+        Thread::yield();
+    }
+    return 0;
+}
+
+void user_main(void* arg)
+{
+    UNUSED(arg);
+    printf("\nuser process pid %d\n\n", getpid());
+    int32_t test = 0;
+    while (true)
+    {
+        char    buffer[2];
+        int32_t fd[2];
+        if (pipe(fd) == -1)
+        {
+            printf("pip failed");
+            while (true) {}
+        }
+        auto pid = fork();
+        if (pid == 0)
+        {
+            test--;
+            printf("i am child %d, test addr: %x, value %d\n\n", getpid(), &test, test);
+            write(fd[1], "123456", 6);
+            printf("write ok\n");
+            while (true) {}
+        }
+        test++;
+        printf("i am parent %d, child %d, test addr: %x, value %d\n\n", getpid(), pid, &test, test);
+        while (true)
+        {
+            read(fd[0], buffer, 1);
+            printf("%c", buffer[0]);
+        }
+        while (true) {}
+    }
+} 
+```
+
 ## 项目环境
 
 bochs  
