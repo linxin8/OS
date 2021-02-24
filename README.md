@@ -32,9 +32,9 @@ sudo make install
 
 ## 运行
  
-1、下载项目  
-2、进入项目目录  
-3、执行命令 make run  
+1. 下载项目  
+2. 进入项目目录  
+3. 执行命令 make run  
 
 ## make 参数
 
@@ -44,11 +44,9 @@ make rebuild 清理项目并重新编译
 
 ## 内核开发与启动流程
 
-[内核开发流程](https://github.com/linxin8/os/blob/master/development.md)
+[开发流程](https://github.com/linxin8/os/blob/master/development.md)
 
-[内核启动流程](https://github.com/linxin8/os/blob/master/boot.md)
-
-## 内核启动
+[启动流程](https://github.com/linxin8/os/blob/master/boot.md)
  
 ## 关于C++
 
