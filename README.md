@@ -69,7 +69,7 @@ void user_main(void* arg)
     }
 } 
 ```
-![GitHub](https://github.com/linxin8/OS/demo.png "demo")
+![GitHub](https://github.com/linxin8/OS/blob/master/demo.png "demo")
 
 ## 项目环境
 
