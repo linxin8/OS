@@ -32,9 +32,9 @@ sudo make install
 
 ## 运行
  
-1.下载项目  
-2.进入项目目录  
-3.执行命令 make run  
+1. 下载项目  
+2. 进入项目目录  
+3. 执行命令 make run  
 
 ## make 参数
 
