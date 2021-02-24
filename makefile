@@ -1,7 +1,7 @@
 BUILD_DIR := build
 LIB :=  -I ./
 CFLAGS := -Wall -m32 -fno-stack-protector $(LIB) -c -fno-builtin -W -std=c++17 -fno-exceptions -fno-threadsafe-statics -nostartfiles -ffreestanding  -fno-rtti   
-CC := gcc-7
+CC := gcc-10
 TARGET := app  
 SRC_DIR :=  kernel process thread lib disk 
 CPP_SRC := $(foreach dir, $(SRC_DIR), $(wildcard $(dir)/*.cpp))   
@@ -17,7 +17,7 @@ $(TARGET):stop $(ALL_OBJ) BOOT_BIN
   
 BOOT_BIN: $(BUILD_DIR)/kernel/mbr.asmbin $(BUILD_DIR)/kernel/load.asmbin 
 	dd if=$(BUILD_DIR)/kernel/mbr.asmbin  of=os.img count=1  conv=notrunc
-	dd if=$(BUILD_DIR)/kernel/load.asmbin of=os.img seek=2 count=20  conv=notrunc
+	dd if=$(BUILD_DIR)/kernel/load.asmbin of=os.img seek=2 count=7  conv=notrunc
 
 $(BUILD_DIR)/%.o:%.cpp 
 	@if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi;

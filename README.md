@@ -5,16 +5,36 @@
 ## 项目环境
 
 bochs  
-g++-7  
+g++-10  
 nasm  
 ubuntu  
 
-## 如何运行
+## 环境搭建
 
-1、在ubuntu下安装bochs、g++-7、nasm  
-2、下载项目  
-3、进入项目目录  
-4、执行命令 make run  
+### 安装nasm
+```
+sudo apt install nasm
+```
+
+### 安装bochs
+
+```sh
+sudo apt install -y g++ libx11-dev libxrandr-dev  build-essential libgtk2.0-dev libreadline-dev libcanberra-gtk-module
+wget https://sourceforge.net/projects/bochs/files/bochs/2.6.9/bochs-2.6.9.tar.gz/download
+mv download bochs.tar
+tar -xvf bochs.tar bochs-2.6.9/
+cd bochs-2.6.9/
+./configure --enable-debugger --with-x11 --enable-all-optimizations
+make
+sudo make install
+```
+
+
+## 运行
+ 
+1、下载项目  
+2、进入项目目录  
+3、执行命令 make run  
 
 ## make 参数
 
@@ -22,6 +42,14 @@ make 编译
 make run 编译并运行  
 make rebuild 清理项目并重新编译
 
+## 内核开发与启动流程
+
+[内核开发流程](https://github.com/linxin8/os/blob/master/development.md)
+
+[内核启动流程](https://github.com/linxin8/os/blob/master/boot.md)
+
+## 内核启动
+ 
 ## 关于C++
 
 [C++语言特性的使用](https://github.com/linxin8/os/blob/master/cpp_feature_list.md)  
