@@ -1,8 +1,8 @@
-# os
+# OS
 
 一个简单的操作系统内核，实现了简单的功能，如启动，线程/进程管理，内存管理，文件管理，输入输出，用户进程，系统调用等，总代码7k行左右。
 
-## docker 一键运行
+## Docker 一键运行
 ```bash
 sudo docker run --net=host -e DISPLAY=127.0.0.1:10.0 -v $HOME/.Xauthority:/root/.Xauthority:rw  -v /tmp/.X11-unix:/tmp/.X11-unix linxin8/os /run_gui.sh
 ```
@@ -114,7 +114,7 @@ sudo apt install g++-10
 2. 进入项目目录  
 3. 执行命令 make run  
 
-## make 参数
+## Make 参数
 
 make 编译  
 make run 编译并运行  
