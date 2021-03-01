@@ -98,6 +98,10 @@ make
 sudo make install
 ```
 
+### 安装g++-10
+```
+sudo apt install g++-10
+```
 
 ## 运行
  
